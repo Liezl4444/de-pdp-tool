@@ -1,0 +1,14 @@
+# Netlify configuration for the DE-PDP-Tool
+[build]
+  publish = "."                      # the site is just index.html in the root
+  functions = "netlify/functions"    # serverless functions live here
+
+[functions]
+  node_bundler = "esbuild"
+
+# Optional pretty URL: lets the front end call /api/chat instead of the long path.
+# The front end currently calls /.netlify/functions/chat directly, which also works.
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200

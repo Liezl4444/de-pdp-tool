@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DE-PDP-Tool — Your personal development coach</title>
+  <style>
+    .gibs-interactive {
+      --blue:#002c77; --teal:#007378; --purple:#5c2f6f; --grey:#6b7280;
+      --orange:#C9632f; --maroon:#7B293D;
+      --ink:#0b1220; --muted:#4f5668; --bg:#ffffff; --panel:#ffffff;
+      --line:#e6e8e8; --soft:#f6f8fc;
+      --shadow:0 12px 26px rgba(0,0,0,.10); --shadow-sm:0 4px 12px rgba(0,0,0,.08);
+      --radius:14px; --gap:16px;
+    }
+    .gibs-interactive * { box-sizing:border-box; }
+    .gibs-interactive {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background:var(--bg); color:var(--ink); margin:0; padding:20px; line-height:1.6; font-size:16px;
+    }
+    .gibs-interactive :is(a,button,input,textarea,summary,[tabindex]):focus-visible {
+      outline:3px solid var(--teal); outline-offset:3px;
+    }
+    .gibs-interactive .gibs-skip { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+    .gibs-interactive .gibs-skip:focus {
+      position:static; width:auto; height:auto; padding:12px 16px; margin:12px 0;
+      background:#fff; border:2px solid var(--teal); border-radius:10px; display:inline-block;
+    }
+    .gibs-interactive .sr-only {
+      position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+      clip:rect(0,0,0,0); white-space:nowrap; border:0;
+    }
+    .gibs-interactive .wrap { max-width:1040px; margin:0 auto; }
+
+    .gibs-interactive .hero {
+      background:var(--blue); color:#fff; border-radius:16px; box-shadow:var(--shadow);
+      text-align:center; padding:26px 22px; margin-bottom:16px;
+    }
+    .gibs-interactive .hero h1 { margin:0 0 6px; font-size:clamp(22px,3vw,30px); font-weight:800; }
+    .gibs-interactive .hero p { margin:4px auto 0; font-weight:500; font-size:clamp(14px,1.6vw,16px); opacity:.95; max-width:70ch; }
+
+    .gibs-interactive .intro {
+      background:var(--soft); border-left:4px solid var(--blue);
+      padding:12px 18px; border-radius:10px; margin-bottom:18px;
+    }
+    .gibs-interactive .intro p { margin:0; color:var(--muted); font-size:14px; }
+
+    /* Tablist */
+    .gibs-interactive .steps {
+      display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;
+    }
+    .gibs-interactive .step {
+      appearance:none; flex:1 1 160px; min-height:54px; cursor:pointer;
+      border:2px solid var(--line); background:#fff; color:var(--muted);
+      border-radius:12px; padding:8px 14px; font-family:inherit; font-weight:700;
+      font-size:15px; text-align:left; transition:border-color .2s ease, background .2s ease;
+    }
+    .gibs-interactive .step .num {
+      display:inline-block; min-width:24px; height:24px; line-height:24px; text-align:center;
+      border-radius:50%; background:var(--soft); color:var(--blue); font-size:13px; margin-right:8px;
+    }
+    .gibs-interactive .step:hover { background:var(--soft); }
+    .gibs-interactive .step[aria-selected="true"] {
+      border-color:var(--blue); background:var(--blue); color:#fff;
+    }
+    .gibs-interactive .step[aria-selected="true"] .num { background:#fff; color:var(--blue); }
+
+    .gibs-interactive .panel { outline:none; }
+    .gibs-interactive .panel[hidden] { display:none; }
+
+    .gibs-interactive .card {
+      background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
+      border:2px solid var(--line); border-left-width:8px; padding:20px 22px; margin-bottom:16px;
+    }
+    .gibs-interactive .card[data-color="blue"]   { border-left-color:var(--blue); }
+    .gibs-interactive .card[data-color="teal"]   { border-left-color:var(--teal); }
+    .gibs-interactive .card[data-color="purple"] { border-left-color:var(--purple); }
+    .gibs-interactive .card[data-color="grey"]   { border-left-color:var(--grey); }
+    .gibs-interactive .card[data-color="orange"] { border-left-color:var(--orange); }
+    .gibs-interactive .card[data-color="maroon"] { border-left-color:var(--maroon); }
+    .gibs-interactive .card h2 { margin:0 0 4px; font-size:19px; color:var(--blue); }
+    .gibs-interactive .card h3 { margin:0 0 8px; font-size:16px; color:var(--ink); }
+    .gibs-interactive .card .lead { margin:0 0 16px; color:var(--muted); font-size:14px; }
+
+    .gibs-interactive .field { margin-bottom:14px; }
+    .gibs-interactive label { display:block; font-weight:700; font-size:14px; margin-bottom:5px; }
+    .gibs-interactive .hint { font-weight:400; color:var(--muted); font-size:13px; }
+    .gibs-interactive input[type="text"], .gibs-interactive textarea {
+      width:100%; font-family:inherit; font-size:15px; color:var(--ink);
+      border:2px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff;
+    }
+    .gibs-interactive textarea { min-height:78px; resize:vertical; }
+    .gibs-interactive input:focus, .gibs-interactive textarea:focus { border-color:var(--teal); }
+
+    .gibs-interactive .btn {
+      appearance:none; border:0; border-radius:12px; padding:10px 18px; cursor:pointer;
+      font-weight:800; min-height:44px; color:#fff; background:var(--blue);
+      box-shadow:0 10px 22px rgba(0,0,0,.12); font-family:inherit; transition:background .2s ease;
+    }
+    .gibs-interactive .btn:hover { background:#003a99; }
+    .gibs-interactive .btn:disabled { opacity:.55; cursor:progress; }
+    .gibs-interactive .btn.ghost { background:#eef2fb; color:var(--blue); border:1px solid #d6e0f9; box-shadow:none; }
+    .gibs-interactive .btn.ghost:hover { background:#d6e0f9; }
+    .gibs-interactive .btn.teal { background:var(--teal); }
+    .gibs-interactive .btn.teal:hover { background:#005a5e; }
+
+    .gibs-interactive .coach {
+      background:var(--soft); border-radius:12px; padding:16px; margin-top:14px;
+    }
+    .gibs-interactive .coach-reply {
+      background:#fff; border:2px solid var(--line); border-left:6px solid var(--teal);
+      border-radius:10px; padding:14px 16px; margin-top:12px; white-space:pre-wrap; font-size:15px;
+    }
+    .gibs-interactive .coach-reply.empty { color:var(--muted); font-style:italic; border-left-color:var(--line); }
+
+    .gibs-interactive .rec-group { margin-bottom:6px; }
+    .gibs-interactive .rec-list { list-style:none; padding:0; margin:0; }
+    .gibs-interactive .rec-list li { padding:10px 0; border-top:1px solid var(--line); }
+    .gibs-interactive .rec-list li:first-child { border-top:0; }
+    .gibs-interactive .rec-title { font-weight:700; }
+    .gibs-interactive .tag {
+      display:inline-block; font-size:11px; font-weight:700; letter-spacing:.02em;
+      padding:2px 8px; border-radius:999px; background:var(--soft); color:var(--blue); margin-left:6px;
+    }
+    .gibs-interactive .rec-why { color:var(--muted); font-size:14px; margin:2px 0 0; }
+    .gibs-interactive .subhead { font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:14px 0 4px; }
+
+    .gibs-interactive .note {
+      font-size:13px; color:var(--muted); background:#fff; border:1px dashed var(--line);
+      border-radius:10px; padding:10px 12px; margin-top:14px;
+    }
+    .gibs-interactive .controls { display:flex; justify-content:center; gap:14px; margin-top:20px; flex-wrap:wrap; align-items:center; }
+    .gibs-interactive .keyboard-hint { width:100%; text-align:center; font-size:12px; color:var(--muted); margin-top:4px; }
+    .gibs-interactive .privacy { text-align:center; font-size:12px; color:var(--muted); margin-top:16px; }
+
+    .gibs-interactive .spinner {
+      display:inline-block; width:14px; height:14px; border:2px solid #ffffff80; border-top-color:#fff;
+      border-radius:50%; vertical-align:-2px; margin-right:8px; animation:de-spin .8s linear infinite;
+    }
+    @keyframes de-spin { to { transform:rotate(360deg); } }
+    @media (prefers-reduced-motion:reduce) {
+      .gibs-interactive .btn, .gibs-interactive .step { transition:none !important; }
+      .gibs-interactive .spinner { animation:none; }
+    }
+    @media (max-width:520px) {
+      .gibs-interactive { padding:14px; }
+      .gibs-interactive .step { flex:1 1 100%; }
+    }
+  </style>
+</head>
+<body>
+  <section class="gibs-interactive" aria-labelledby="de-title">
+    <a class="gibs-skip" href="#de-main">Skip to main content</a>
+    <div class="wrap">
+      <header class="hero">
+        <h1 id="de-title">DE-PDP-Tool</h1>
+        <p>Your personal development coach. Shape your plan, build your charter, and find what to learn next.</p>
+      </header>
+
+      <main id="de-main">
+        <section class="intro" aria-label="Introduction">
+          <p>Work through the three steps below. Your coach helps at each one. This is a working prototype, so explore freely.</p>
+        </section>
+
+        <div class="steps" role="tablist" aria-label="Development steps">
+          <button class="step" role="tab" id="de-tab-pdp" aria-selected="true" aria-controls="de-panel-pdp" tabindex="0" type="button"><span class="num">1</span>Your PDP</button>
+          <button class="step" role="tab" id="de-tab-charter" aria-selected="false" aria-controls="de-panel-charter" tabindex="-1" type="button"><span class="num">2</span>Your Charter</button>
+          <button class="step" role="tab" id="de-tab-next" aria-selected="false" aria-controls="de-panel-next" tabindex="-1" type="button"><span class="num">3</span>My Next</button>
+        </div>
+
+        <!-- STEP 1: PDP -->
+        <section class="panel" role="tabpanel" id="de-panel-pdp" aria-labelledby="de-tab-pdp" tabindex="0">
+          <div class="card" data-color="teal">
+            <h2>Your Personal Development Plan</h2>
+            <p class="lead">Start with where you are and where you want to go. There are no wrong answers.</p>
+
+            <div class="field">
+              <label for="de-strengths">Your top 5 strengths <span class="hint">(your CliftonStrengths, or just what you are known for)</span></label>
+              <input type="text" id="de-strengths" placeholder="e.g. Achiever, Strategic, Intellection, Ideation, Adaptability" />
+            </div>
+            <div class="field">
+              <label for="de-improve">What would you like to develop or improve?</label>
+              <textarea id="de-improve" placeholder="The goals or areas where you want to grow."></textarea>
+            </div>
+            <div class="field">
+              <label for="de-skills">Which skills would close that gap?</label>
+              <textarea id="de-skills" placeholder="The specific skills or knowledge you feel you are missing."></textarea>
+            </div>
+            <div class="field">
+              <label for="de-aspire">Where do you want to go next? <span class="hint">(your career aspirations)</span></label>
+              <textarea id="de-aspire" placeholder="The role, expertise or direction you are aiming for."></textarea>
+            </div>
+
+            <div class="coach">
+              <div class="field">
+                <label for="de-coach-input">Talk to your coach <span class="hint">(ask anything, or just say what is on your mind)</span></label>
+                <textarea id="de-coach-input" placeholder="e.g. I am not sure how to turn 'better at strategy' into a real goal."></textarea>
+              </div>
+              <button class="btn teal" id="de-coach-btn" type="button">Coach me</button>
+              <div class="coach-reply empty" id="de-coach-reply" aria-live="polite">Your coach will respond here.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP 2: CHARTER -->
+        <section class="panel" role="tabpanel" id="de-panel-charter" aria-labelledby="de-tab-charter" tabindex="0" hidden>
+          <div class="card" data-color="blue">
+            <h2>Your Individual Charter</h2>
+            <p class="lead">Turn your development plan into charter goals with clear, measurable outcomes.</p>
+
+            <div class="field">
+              <label for="de-role">Your role</label>
+              <input type="text" id="de-role" placeholder="e.g. Instructional Designer, Digital Education" />
+            </div>
+            <div class="field">
+              <label for="de-purpose">Role purpose <span class="hint">(one or two lines on why your role exists)</span></label>
+              <textarea id="de-purpose" placeholder="The core contribution you make."></textarea>
+            </div>
+            <div class="field">
+              <label for="de-goals">Your goals for the year</label>
+              <textarea id="de-goals" placeholder="Plain-language goals. Your coach will help make them measurable."></textarea>
+            </div>
+
+            <button class="btn teal" id="de-smart-btn" type="button">Draft SMART measures</button>
+            <div class="coach-reply empty" id="de-smart-reply" aria-live="polite">Your coach will draft measurable versions of your goals here.</div>
+          </div>
+        </section>
+
+        <!-- STEP 3: MY NEXT -->
+        <section class="panel" role="tabpanel" id="de-panel-next" aria-labelledby="de-tab-next" tabindex="0" hidden>
+          <div class="card" data-color="purple">
+            <h2>My Next</h2>
+            <p class="lead">Based on everything you have shared, here is a curated path of courses and reading, grouped by theme.</p>
+            <button class="btn" id="de-next-btn" type="button">Build my learning path</button>
+            <div id="de-next-status" class="coach-reply empty" aria-live="polite">Your personalised path will appear here once you have filled in steps 1 and 2.</div>
+            <div id="de-next-results"></div>
+            <p class="note" id="de-next-note" hidden>Course and article titles shown here are coach-suggested examples for this prototype. In the live tool these would be drawn from the curated GIBS LinkedIn Learning catalogue and approved reading lists.</p>
+          </div>
+        </section>
+
+        <div class="controls">
+          <button class="btn ghost" id="de-reset-btn" type="button">Reset</button>
+          <button class="btn ghost" id="de-download-btn" type="button">Download my plan</button>
+          <button class="btn" id="de-print-btn" type="button">Print to PDF</button>
+          <p class="keyboard-hint">Tip: when a step tab is focused, use the left and right arrow keys to move between steps.</p>
+        </div>
+
+        <p class="privacy">Your entries stay in this browser session only and are not stored anywhere. Download your plan to keep it.</p>
+
+        <div class="sr-only" id="de-status" aria-live="polite"></div>
+      </main>
+    </div>
+  </section>
+
+  <script>
+  (function () {
+    "use strict";
+    var statusEl = document.getElementById("de-status");
+    function announce(msg) { if (statusEl) statusEl.textContent = msg; }
+
+    /* ---------- Tablist (WAI-ARIA) ---------- */
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+    function selectTab(tab, setFocus) {
+      tabs.forEach(function (t) {
+        var selected = (t === tab);
+        t.setAttribute("aria-selected", selected ? "true" : "false");
+        t.tabIndex = selected ? 0 : -1;
+        var panel = document.getElementById(t.getAttribute("aria-controls"));
+        if (panel) panel.hidden = !selected;
+      });
+      if (setFocus) tab.focus();
+    }
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener("click", function () { selectTab(tab, false); });
+      tab.addEventListener("keydown", function (e) {
+        var idx = i;
+        if (e.key === "ArrowRight") idx = (i + 1) % tabs.length;
+        else if (e.key === "ArrowLeft") idx = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === "Home") idx = 0;
+        else if (e.key === "End") idx = tabs.length - 1;
+        else return;
+        e.preventDefault();
+        selectTab(tabs[idx], true);
+      });
+    });
+
+    /* ---------- Anthropic API helper ---------- */
+    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ""; }
+
+    async function callAI(system, userText) {
+      var res = await fetch("/.netlify/functions/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ system: system, user: userText })
+      });
+      if (!res.ok) throw new Error("Request failed (" + res.status + ")");
+      var data = await res.json();
+      return (data.text || "").trim();
+    }
+
+    function setLoading(btn, reply, loadingMsg) {
+      btn.disabled = true;
+      btn.dataset.label = btn.textContent;
+      btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Thinking...';
+      if (reply) { reply.classList.remove("empty"); reply.textContent = loadingMsg; }
+      announce(loadingMsg);
+    }
+    function clearLoading(btn) {
+      btn.disabled = false;
+      if (btn.dataset.label) btn.textContent = btn.dataset.label;
+    }
+
+    function pdpSummary() {
+      return "Top strengths: " + (val("de-strengths") || "(not given)") +
+        "\nWants to develop: " + (val("de-improve") || "(not given)") +
+        "\nSkills to build: " + (val("de-skills") || "(not given)") +
+        "\nCareer aspiration: " + (val("de-aspire") || "(not given)");
+    }
+
+    /* ---------- Step 1: PDP coach ---------- */
+    var coachBtn = document.getElementById("de-coach-btn");
+    var coachReply = document.getElementById("de-coach-reply");
+    coachBtn.addEventListener("click", async function () {
+      var sys = "You are a warm, sharp career development coach for GIBS, a leading South African business school. " +
+        "You help an employee or alum work on their Personal Development Plan, which has: top strengths, areas to develop, " +
+        "skills to build, and career aspirations. Coach reflectively: briefly reflect what you heard, ask one good question, " +
+        "and offer one or two concrete, encouraging next steps. Use UK and South African spelling. Do not use em dashes. " +
+        "Keep it under 170 words. Address the person directly as 'you'.";
+      var user = "Here is what the person has shared:\n" + pdpSummary() +
+        "\n\nTheir message to you: " + (val("de-coach-input") || "(no message, please open with an encouraging reflection and one question)");
+      setLoading(coachBtn, coachReply, "Your coach is thinking...");
+      try {
+        var out = await callAI(sys, user);
+        coachReply.classList.remove("empty");
+        coachReply.textContent = out;
+        announce("Your coach has replied.");
+      } catch (err) {
+        coachReply.classList.remove("empty");
+        coachReply.textContent = "Sorry, the coach could not respond just now. Please try again in a moment.";
+        announce("The coach could not respond.");
+      } finally { clearLoading(coachBtn); }
+    });
+
+    /* ---------- Step 2: SMART measures ---------- */
+    var smartBtn = document.getElementById("de-smart-btn");
+    var smartReply = document.getElementById("de-smart-reply");
+    smartBtn.addEventListener("click", async function () {
+      var sys = "You help write SMART performance measures for a GIBS Individual Charter. " +
+        "For the goals provided, return two or three measures, each Specific, Measurable, Achievable, Relevant and Time-bound, " +
+        "in plain language. Use UK and South African spelling. Do not use em dashes. Keep each measure to one sentence.";
+      var user = "Role: " + (val("de-role") || "(not given)") +
+        "\nRole purpose: " + (val("de-purpose") || "(not given)") +
+        "\nGoals: " + (val("de-goals") || "(not given)") +
+        "\nContext from their development plan:\n" + pdpSummary();
+      setLoading(smartBtn, smartReply, "Drafting measurable versions...");
+      try {
+        var out = await callAI(sys, user);
+        smartReply.classList.remove("empty");
+        smartReply.textContent = out;
+        announce("SMART measures drafted.");
+      } catch (err) {
+        smartReply.classList.remove("empty");
+        smartReply.textContent = "Sorry, that did not work just now. Please try again in a moment.";
+        announce("Could not draft measures.");
+      } finally { clearLoading(smartBtn); }
+    });
+
+    /* ---------- Step 3: My Next ---------- */
+    var nextBtn = document.getElementById("de-next-btn");
+    var nextStatus = document.getElementById("de-next-status");
+    var nextResults = document.getElementById("de-next-results");
+    var nextNote = document.getElementById("de-next-note");
+    var palette = ["teal", "purple", "orange", "maroon", "blue", "grey"];
+
+    function esc(s) { return String(s == null ? "" : s).replace(/[&<>]/g, function (c) { return { "&":"&amp;","<":"&lt;",">":"&gt;" }[c]; }); }
+
+    function renderRecommendations(data) {
+      nextResults.innerHTML = "";
+      if (data.summary) {
+        var p = document.createElement("p");
+        p.className = "lead";
+        p.style.marginTop = "16px";
+        p.textContent = data.summary;
+        nextResults.appendChild(p);
+      }
+      (data.groups || []).forEach(function (g, i) {
+        var card = document.createElement("div");
+        card.className = "card rec-group";
+        card.setAttribute("data-color", palette[i % palette.length]);
+        var html = "<h3>" + esc(g.theme || "Recommended") + "</h3>";
+        if (g.courses && g.courses.length) {
+          html += '<p class="subhead">Courses</p><ul class="rec-list">';
+          g.courses.forEach(function (c) {
+            html += '<li><span class="rec-title">' + esc(c.title) + '</span>' +
+              '<span class="tag">' + esc(c.provider || "LinkedIn Learning") + '</span>' +
+              (c.why ? '<p class="rec-why">' + esc(c.why) + '</p>' : '') + '</li>';
+          });
+          html += "</ul>";
+        }
+        if (g.articles && g.articles.length) {
+          html += '<p class="subhead">Reading</p><ul class="rec-list">';
+          g.articles.forEach(function (a) {
+            html += '<li><span class="rec-title">' + esc(a.title) + '</span>' +
+              (a.why ? '<p class="rec-why">' + esc(a.why) + '</p>' : '') + '</li>';
+          });
+          html += "</ul>";
+        }
+        card.innerHTML = html;
+        nextResults.appendChild(card);
+      });
+      nextNote.hidden = false;
+    }
+
+    nextBtn.addEventListener("click", async function () {
+      var sys = "You are a learning-path curator for GIBS, a South African business school with a LinkedIn Learning account. " +
+        "From the person's development plan and charter, propose a personalised learning path. " +
+        "Respond ONLY with valid JSON, no markdown, no backticks, no preamble. Use this exact shape: " +
+        '{"summary":"one encouraging sentence","groups":[{"theme":"short theme name",' +
+        '"courses":[{"title":"realistic LinkedIn Learning style course title","provider":"LinkedIn Learning","why":"one line on why it fits"}],' +
+        '"articles":[{"title":"a realistic article or reading title","why":"one line"}]}]}. ' +
+        "Give two or three groups, each with two or three courses and one or two articles. " +
+        "Use UK and South African spelling. Do not use em dashes.";
+      var user = "Development plan:\n" + pdpSummary() +
+        "\n\nCharter:\nRole: " + (val("de-role") || "(not given)") +
+        "\nRole purpose: " + (val("de-purpose") || "(not given)") +
+        "\nGoals: " + (val("de-goals") || "(not given)");
+      setLoading(nextBtn, nextStatus, "Building your personalised path...");
+      nextResults.innerHTML = "";
+      try {
+        var out = await callAI(sys, user);
+        var clean = out.replace(/```json/gi, "").replace(/```/g, "").trim();
+        var data = JSON.parse(clean);
+        nextStatus.classList.add("empty");
+        nextStatus.textContent = "Here is your path.";
+        renderRecommendations(data);
+        announce("Your learning path is ready.");
+      } catch (err) {
+        nextStatus.classList.remove("empty");
+        nextStatus.textContent = "Sorry, the path could not be built just now. Please try again in a moment.";
+        announce("Could not build the path.");
+      } finally { clearLoading(nextBtn); }
+    });
+
+    /* ---------- Controls ---------- */
+    document.getElementById("de-reset-btn").addEventListener("click", function () {
+      ["de-strengths","de-improve","de-skills","de-aspire","de-coach-input","de-role","de-purpose","de-goals"]
+        .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ""; });
+      coachReply.textContent = "Your coach will respond here."; coachReply.classList.add("empty");
+      smartReply.textContent = "Your coach will draft measurable versions of your goals here."; smartReply.classList.add("empty");
+      nextStatus.textContent = "Your personalised path will appear here once you have filled in steps 1 and 2."; nextStatus.classList.add("empty");
+      nextResults.innerHTML = ""; nextNote.hidden = true;
+      selectTab(tabs[0], true);
+      announce("Everything reset.");
+    });
+
+    document.getElementById("de-download-btn").addEventListener("click", function () {
+      var lines = [
+        "DE-PDP-TOOL  |  MY DEVELOPMENT PLAN", "",
+        "TOP STRENGTHS: " + val("de-strengths"),
+        "WANT TO DEVELOP: " + val("de-improve"),
+        "SKILLS TO BUILD: " + val("de-skills"),
+        "CAREER ASPIRATION: " + val("de-aspire"), "",
+        "ROLE: " + val("de-role"),
+        "ROLE PURPOSE: " + val("de-purpose"),
+        "GOALS: " + val("de-goals")
+      ];
+      var smart = document.getElementById("de-smart-reply");
+      if (smart && !smart.classList.contains("empty")) { lines.push("", "SMART MEASURES:", smart.textContent); }
+      var blob = new Blob([lines.join("\n")], { type: "text/plain" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "My_Development_Plan.txt";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      announce("Plan downloaded.");
+    });
+
+    document.getElementById("de-print-btn").addEventListener("click", function () { window.print(); });
+  }());
+  </script>
+</body>
+</html>
