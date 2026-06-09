@@ -92,6 +92,35 @@
     .gibs-interactive textarea { min-height:78px; resize:vertical; }
     .gibs-interactive input:focus, .gibs-interactive textarea:focus { border-color:var(--teal); }
 
+    .gibs-interactive .field-label { display:block; font-weight:700; font-size:14px; margin:0 0 5px; }
+    .gibs-interactive fieldset.strengths-domain {
+      border:2px solid rgba(0,115,120,0.3); border-radius:12px; padding:12px 14px 14px; margin:0 0 12px;
+      background:rgba(0,115,120,0.07);
+    }
+    .gibs-interactive fieldset.strengths-domain legend {
+      font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em;
+      color:var(--teal); padding:0 6px;
+    }
+    .gibs-interactive .chip-grid { display:flex; flex-wrap:wrap; gap:8px; }
+    .gibs-interactive .chip-option { position:relative; }
+    .gibs-interactive .chip-option input[type="checkbox"] {
+      position:absolute; opacity:0; width:1px; height:1px; margin:0; padding:0;
+    }
+    .gibs-interactive .chip-option label {
+      display:inline-flex; align-items:center; min-height:44px; margin:0; cursor:pointer;
+      border:2px solid var(--line); border-radius:999px; padding:8px 16px;
+      font-weight:600; font-size:14px; color:var(--ink); background:#fff;
+      transition:border-color .15s ease, background .15s ease, color .15s ease;
+    }
+    .gibs-interactive .chip-option label:hover { border-color:var(--teal); background:var(--soft); }
+    .gibs-interactive .chip-option input[type="checkbox"]:checked + label {
+      border-color:var(--teal); background:var(--teal); color:#fff;
+    }
+    .gibs-interactive .chip-option input[type="checkbox"]:focus-visible + label {
+      outline:3px solid var(--teal); outline-offset:3px;
+    }
+    .gibs-interactive .strengths-count { margin:10px 0 0; font-size:13px; font-weight:700; color:var(--muted); }
+
     .gibs-interactive .btn {
       appearance:none; border:0; border-radius:12px; padding:10px 18px; cursor:pointer;
       font-weight:800; min-height:44px; color:#fff; background:var(--blue);
@@ -139,7 +168,7 @@
     }
     @keyframes de-spin { to { transform:rotate(360deg); } }
     @media (prefers-reduced-motion:reduce) {
-      .gibs-interactive .btn, .gibs-interactive .step { transition:none !important; }
+      .gibs-interactive .btn, .gibs-interactive .step, .gibs-interactive .chip-option label { transition:none !important; }
       .gibs-interactive .spinner { animation:none; }
     }
     @media (max-width:520px) {
@@ -175,8 +204,13 @@
             <p class="lead">Start with where you are and where you want to go. There are no wrong answers.</p>
 
             <div class="field">
-              <label for="de-strengths">Your top 5 strengths <span class="hint">(your CliftonStrengths, or just what you are known for)</span></label>
-              <input type="text" id="de-strengths" placeholder="e.g. Achiever, Strategic, Intellection, Ideation, Adaptability" />
+              <p class="hint">Haven't done the assessment yet? <a id="de-strengths-link" target="_blank" rel="noopener">Take the official CliftonStrengths assessment on Gallup's site</a> — it takes approximately 30 minutes and reveals your unique talent profile.</p>
+              <p class="field-label" id="de-strengths-heading">Select your top 5 CliftonStrengths</p>
+              <p class="hint">CliftonStrengths identifies your natural patterns of thinking, feeling, and behaving. Your top themes reflect where you have the greatest potential to build real strength. Complete the assessment first so your selections reflect your actual results — not just the themes that sound appealing.</p>
+              <div role="group" aria-labelledby="de-strengths-heading">
+                <div id="de-strengths-picker"></div>
+                <p class="strengths-count" id="de-strengths-count" aria-live="polite">0 of 5 selected</p>
+              </div>
             </div>
             <div class="field">
               <label for="de-improve">What would you like to develop or improve?</label>
@@ -196,6 +230,7 @@
                 <label for="de-coach-input">Talk to your coach <span class="hint">(ask anything, or just say what is on your mind)</span></label>
                 <textarea id="de-coach-input" placeholder="e.g. I am not sure how to turn 'better at strategy' into a real goal."></textarea>
               </div>
+              <p class="hint">Your AI mentor uses everything you have shared above — your strengths, development goals, skills, and aspirations — to coach you personally. Use the space above to ask for help, clarify a goal you are unsure about, or just share what is on your mind.</p>
               <button class="btn teal" id="de-coach-btn" type="button">Coach me</button>
               <div class="coach-reply empty" id="de-coach-reply" aria-live="polite">Your coach will respond here.</div>
             </div>
@@ -311,11 +346,81 @@
     }
 
     function pdpSummary() {
-      return "Top strengths: " + (val("de-strengths") || "(not given)") +
+      return "Top strengths: " + (selectedStrengths.length ? selectedStrengths.join(", ") : "(not given)") +
         "\nWants to develop: " + (val("de-improve") || "(not given)") +
         "\nSkills to build: " + (val("de-skills") || "(not given)") +
         "\nCareer aspiration: " + (val("de-aspire") || "(not given)");
     }
+
+    /* ---------- CliftonStrengths picker ---------- */
+    // CliftonStrengths assessment link: update this single URL if Gallup changes the official test page
+    var CLIFTONSTRENGTHS_URL = "https://www.gallup.com/cliftonstrengths";
+
+    var STRENGTHS_MAX = 5;
+    var STRENGTHS_DOMAINS = [
+      { domain: "Executing", themes: ["Achiever", "Arranger", "Belief", "Consistency", "Deliberative", "Discipline", "Focus", "Responsibility", "Restorative"] },
+      { domain: "Influencing", themes: ["Activator", "Command", "Communication", "Competition", "Maximizer", "Self-Assurance", "Significance", "Woo"] },
+      { domain: "Relationship Building", themes: ["Adaptability", "Connectedness", "Developer", "Empathy", "Harmony", "Includer", "Individualization", "Positivity", "Relator"] },
+      { domain: "Strategic Thinking", themes: ["Analytical", "Context", "Futuristic", "Ideation", "Input", "Intellection", "Learner", "Strategic"] }
+    ];
+    var selectedStrengths = [];
+
+    function strengthInputId(theme) {
+      return "de-strength-" + theme.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    }
+    function updateStrengthsCount() {
+      var countEl = document.getElementById("de-strengths-count");
+      if (countEl) countEl.textContent = selectedStrengths.length + " of " + STRENGTHS_MAX + " selected";
+    }
+    function onStrengthToggle(e) {
+      var cb = e.target;
+      var theme = cb.value;
+      if (cb.checked) {
+        if (selectedStrengths.length >= STRENGTHS_MAX) {
+          cb.checked = false;
+          announce("You have already chosen " + STRENGTHS_MAX + " strengths. Remove one before adding another.");
+          return;
+        }
+        selectedStrengths.push(theme);
+      } else {
+        var idx = selectedStrengths.indexOf(theme);
+        if (idx !== -1) selectedStrengths.splice(idx, 1);
+      }
+      updateStrengthsCount();
+    }
+    function renderStrengthsPicker() {
+      var picker = document.getElementById("de-strengths-picker");
+      if (!picker) return;
+      var html = "";
+      STRENGTHS_DOMAINS.forEach(function (group) {
+        html += '<fieldset class="strengths-domain"><legend>' + esc(group.domain) + '</legend><div class="chip-grid">';
+        group.themes.forEach(function (theme) {
+          var id = strengthInputId(theme);
+          html += '<div class="chip-option">' +
+            '<input type="checkbox" id="' + id + '" value="' + esc(theme) + '">' +
+            '<label for="' + id + '">' + esc(theme) + '</label>' +
+            '</div>';
+        });
+        html += '</div></fieldset>';
+      });
+      picker.innerHTML = html;
+      Array.prototype.slice.call(picker.querySelectorAll('input[type="checkbox"]')).forEach(function (cb) {
+        cb.addEventListener("change", onStrengthToggle);
+      });
+    }
+    function resetStrengths() {
+      selectedStrengths = [];
+      var picker = document.getElementById("de-strengths-picker");
+      if (picker) {
+        Array.prototype.slice.call(picker.querySelectorAll('input[type="checkbox"]')).forEach(function (cb) { cb.checked = false; });
+      }
+      updateStrengthsCount();
+    }
+
+    renderStrengthsPicker();
+    updateStrengthsCount();
+    var strengthsLink = document.getElementById("de-strengths-link");
+    if (strengthsLink) strengthsLink.href = CLIFTONSTRENGTHS_URL;
 
     /* ---------- Step 1: PDP coach ---------- */
     var coachBtn = document.getElementById("de-coach-btn");
@@ -443,8 +548,9 @@
 
     /* ---------- Controls ---------- */
     document.getElementById("de-reset-btn").addEventListener("click", function () {
-      ["de-strengths","de-improve","de-skills","de-aspire","de-coach-input","de-role","de-purpose","de-goals"]
+      ["de-improve","de-skills","de-aspire","de-coach-input","de-role","de-purpose","de-goals"]
         .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ""; });
+      resetStrengths();
       coachReply.textContent = "Your coach will respond here."; coachReply.classList.add("empty");
       smartReply.textContent = "Your coach will draft measurable versions of your goals here."; smartReply.classList.add("empty");
       nextStatus.textContent = "Your personalised path will appear here once you have filled in steps 1 and 2."; nextStatus.classList.add("empty");
@@ -456,7 +562,7 @@
     document.getElementById("de-download-btn").addEventListener("click", function () {
       var lines = [
         "DE-PDP-TOOL  |  MY DEVELOPMENT PLAN", "",
-        "TOP STRENGTHS: " + val("de-strengths"),
+        "TOP STRENGTHS: " + selectedStrengths.join(", "),
         "WANT TO DEVELOP: " + val("de-improve"),
         "SKILLS TO BUILD: " + val("de-skills"),
         "CAREER ASPIRATION: " + val("de-aspire"), "",
